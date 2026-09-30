@@ -7,13 +7,14 @@ import { get } from './commands/get.js';
 import { run } from './commands/run.js';
 import { exportCmd } from './commands/export.js';
 import { audit } from './commands/audit.js';
+import { buildApiCommand } from './commands/api.generated.js';
 
 const brand = process.env.SECRONNA ?? 'secronna';
 
 const program = new Command()
   .name(brand)
   .description(`CLI for ${brand} — part of the Forjio commerce suite.`)
-  .version('0.2.0');
+  .version('0.2.3');
 
 program.addCommand(auth);
 program.addCommand(project);
@@ -23,6 +24,8 @@ program.addCommand(get);
 program.addCommand(run);
 program.addCommand(exportCmd);
 program.addCommand(audit);
+// Every route of the API, one command each (generated from the API spec: scripts/apigen.sh)
+program.addCommand(buildApiCommand());
 
 program.parseAsync(process.argv).catch((e) => {
   console.error(e);

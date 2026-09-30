@@ -1,13 +1,14 @@
 /**
  * Thin API client for the Secronna CLI.
  *
- * Reuses the on-disk session (`lib/session.ts`) for the bearer token and
- * resolves the API base the same way the frontend does: an env override
+ * The bearer is `SECRONNA_TOKEN`, else the API key or Huudis session saved
+ * by `auth login` (`lib/credentials.ts`, refreshed when stale), and the API
+ * base is resolved the same way the frontend does: an env override
  * (`<BRAND>_API_URL`, e.g. `SECRONNA_API_URL`) that may be a bare origin
  * OR already include the `/api/v1` prefix — a trailing prefix is stripped
  * so it's appended exactly once (mirrors `frontend/src/lib/api.ts`).
  */
-import { loadSession } from './session.js';
+import { CredentialsError, resolveBearer } from './credentials.js';
 
 function brand(): string {
   return process.env.SECRONNA ?? 'secronna';
@@ -35,12 +36,22 @@ export class ApiError extends Error {
   }
 }
 
-function bearer(): string {
-  const s = loadSession();
-  if (!s?.accessToken) {
-    throw new ApiError('Not signed in — run `auth login` first.', 'AUTH_REQUIRED', 401);
+async function bearer(): Promise<string> {
+  let resolved;
+  try {
+    resolved = await resolveBearer();
+  } catch (e) {
+    if (e instanceof CredentialsError) throw new ApiError(e.message, e.code, 401);
+    throw e;
   }
-  return s.accessToken;
+  if (!resolved) {
+    throw new ApiError(
+      'Not signed in — run `secronna auth login` (or `auth login --api-key <key>`), or set SECRONNA_TOKEN.',
+      'AUTH_REQUIRED',
+      401,
+    );
+  }
+  return resolved.token;
 }
 
 interface RequestOpts {
@@ -60,7 +71,7 @@ export async function request<T = unknown>(path: string, opts: RequestOpts = {})
   }
 
   const headers: Record<string, string> = {
-    Authorization: `Bearer ${bearer()}`,
+    Authorization: `Bearer ${await bearer()}`,
     Accept: 'application/json',
   };
   if (body !== undefined) headers['Content-Type'] = 'application/json';
