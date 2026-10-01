@@ -272,13 +272,80 @@ export const API_ROUTES: Array<{ area: string; routes: Route[] }> = [
   ]
  },
  {
+  "area": "webhook-deliveries",
+  "routes": [
+   {
+    "name": "get",
+    "method": "GET",
+    "path": "/api/v1/webhook-deliveries/{id}",
+    "summary": "Get a webhook delivery, with every attempt made at it.",
+    "pathParams": [
+     "id"
+    ],
+    "query": [],
+    "body": null
+   },
+   {
+    "name": "list",
+    "method": "GET",
+    "path": "/api/v1/webhook-deliveries",
+    "summary": "List webhook deliveries across the workspace's endpoints, newest first, each with every attempt made.",
+    "pathParams": [],
+    "query": [
+     {
+      "name": "endpointId",
+      "kind": "string",
+      "required": false
+     },
+     {
+      "name": "status",
+      "kind": "string",
+      "required": false,
+      "choices": [
+       "pending",
+       "success",
+       "failed"
+      ]
+     },
+     {
+      "name": "eventType",
+      "kind": "string",
+      "required": false
+     },
+     {
+      "name": "limit",
+      "kind": "number",
+      "required": false
+     },
+     {
+      "name": "cursor",
+      "kind": "string",
+      "required": false
+     }
+    ],
+    "body": null
+   },
+   {
+    "name": "retry",
+    "method": "POST",
+    "path": "/api/v1/webhook-deliveries/{id}/retry",
+    "summary": "Retry a webhook delivery: one more attempt now at a failed delivery (or send a successful one again). 202 with the delivery pending; 409 ALREADY_QUEUED when it is pending already, 409 ENDPOINT_DISABLE",
+    "pathParams": [
+     "id"
+    ],
+    "query": [],
+    "body": null
+   }
+  ]
+ },
+ {
   "area": "webhooks",
   "routes": [
    {
     "name": "create",
     "method": "POST",
     "path": "/api/v1/webhooks",
-    "summary": "RequireAuth is attached PER-ROUTE (not r.use) so unmatched paths fall through to the parent 404 handler instead of 401.",
+    "summary": "Register a webhook endpoint.",
     "pathParams": [],
     "query": [],
     "body": [
@@ -303,7 +370,7 @@ export const API_ROUTES: Array<{ area: string; routes: Route[] }> = [
     "name": "delete",
     "method": "DELETE",
     "path": "/api/v1/webhooks/{id}",
-    "summary": "Delete a webhook",
+    "summary": "Delete a webhook endpoint and its delivery log.",
     "pathParams": [
      "id"
     ],
@@ -314,7 +381,7 @@ export const API_ROUTES: Array<{ area: string; routes: Route[] }> = [
     "name": "deliveries",
     "method": "GET",
     "path": "/api/v1/webhooks/{id}/deliveries",
-    "summary": "List deliveries",
+    "summary": "One endpoint's recent deliveries (newest first), each with its attempts.",
     "pathParams": [
      "id"
     ],
@@ -328,13 +395,54 @@ export const API_ROUTES: Array<{ area: string; routes: Route[] }> = [
     "body": null
    },
    {
-    "name": "list",
+    "name": "event-types",
     "method": "GET",
-    "path": "/api/v1/webhooks",
-    "summary": "List webhooks",
+    "path": "/api/v1/webhooks/event-types",
+    "summary": "The event types an endpoint can subscribe to.",
     "pathParams": [],
     "query": [],
     "body": null
+   },
+   {
+    "name": "list",
+    "method": "GET",
+    "path": "/api/v1/webhooks",
+    "summary": "List the workspace's webhook endpoints.",
+    "pathParams": [],
+    "query": [],
+    "body": null
+   },
+   {
+    "name": "update",
+    "method": "PATCH",
+    "path": "/api/v1/webhooks/{id}",
+    "summary": "Change a webhook endpoint: url, events, description, or enabled. enabled: false pauses it (its queued deliveries fail); enabled: true re-enables it, also after Secronna switched it off for failing, an",
+    "pathParams": [
+     "id"
+    ],
+    "query": [],
+    "body": [
+     {
+      "name": "url",
+      "kind": "string",
+      "required": false
+     },
+     {
+      "name": "events",
+      "kind": "array",
+      "required": false
+     },
+     {
+      "name": "description",
+      "kind": "string",
+      "required": false
+     },
+     {
+      "name": "enabled",
+      "kind": "boolean",
+      "required": false
+     }
+    ]
    }
   ]
  }
